@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "homefin-agent": {
+      "command": "python",
+      "args": [
+        "-m",
+        "apps.mcp.server"
+      ],
+      "cwd": ".",
+      "env": {
+        "HOMEFIN_DATABASE_URL": "sqlite+pysqlite:///./homefin.db"
+      }
+    }
+  }
+}
+

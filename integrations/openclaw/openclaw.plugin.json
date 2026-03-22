@@ -1,0 +1,16 @@
+{
+  "id": "homefin-agent-bundle",
+  "name": "HomeFin Agent Bundle",
+  "version": "0.1.0",
+  "description": "Bundle metadata for HomeFin Agent MCP and finance skill.",
+  "skills": [
+    "skills"
+  ],
+  "commands": [
+    "commands"
+  ],
+  "hooks": [
+    "hooks"
+  ]
+}
+

@@ -1,0 +1,8 @@
+{
+  "homefin": {
+    "database_url": "sqlite+pysqlite:///./homefin.db",
+    "default_channel": "",
+    "default_target": ""
+  }
+}
+

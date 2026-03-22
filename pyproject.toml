@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "homefin-agent"
+version = "0.1.0"
+description = "HomeFin Agent with OpenClaw integration"
+requires-python = ">=3.12"
+dependencies = [
+  "alembic>=1.14,<2",
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "mcp>=1.6,<2",
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.6,<3",
+  "python-multipart>=0.0.20,<1",
+  "sqlalchemy>=2.0,<3",
+  "uvicorn>=0.32,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.25,<1",
+]
+
+[tool.setuptools]
+packages = [
+  "apps",
+  "apps.api",
+  "apps.api.routers",
+  "apps.mcp",
+  "apps.worker",
+  "apps.worker.tasks",
+  "domain",
+  "domain.entities",
+  "domain.enums",
+  "domain.value_objects",
+  "application",
+  "application.dto",
+  "application.services",
+  "adapters",
+  "adapters.importers",
+  "adapters.openclaw",
+  "infra",
+  "infra.config",
+  "infra.db",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

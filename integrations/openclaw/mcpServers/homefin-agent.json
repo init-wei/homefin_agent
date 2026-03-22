@@ -1,0 +1,11 @@
+{
+  "name": "homefin-agent",
+  "transport": "stdio",
+  "command": "python",
+  "args": [
+    "-m",
+    "apps.mcp.server"
+  ],
+  "cwd": "."
+}
+
