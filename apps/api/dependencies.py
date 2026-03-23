@@ -1,20 +1,25 @@
 from collections.abc import Generator
 
 from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from adapters.importers.registry import default_importer_registry
 from adapters.openclaw.gateway_client import OpenClawGatewayClient
 from application.services.account_app_service import AccountAppService
+from application.services.access_service import AccessService
 from application.services.agent_tool_service import AgentToolService
 from application.services.analytics_app_service import AnalyticsAppService
+from application.services.auth_service import AuthService, decode_access_token
 from application.services.budget_app_service import BudgetAppService
 from application.services.category_app_service import CategoryAppService
 from application.services.chat_app_service import ChatAppService
+from application.services.errors import AuthenticationError
 from application.services.household_app_service import HouseholdAppService
 from application.services.identity_binding_service import IdentityBindingService
 from application.services.import_app_service import ImportAppService
 from application.services.transaction_app_service import TransactionAppService
+from infra.db.models import UserModel
 from infra.config.settings import Settings, get_settings
 from infra.db.repositories import (
     AccountRepository,
@@ -29,6 +34,8 @@ from infra.db.repositories import (
     UserRepository,
 )
 from infra.db.session import session_scope
+
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_db_session() -> Generator[Session, None, None]:
@@ -45,6 +52,31 @@ def get_db_session() -> Generator[Session, None, None]:
 
 def get_settings_dependency() -> Settings:
     return get_settings()
+
+
+def get_auth_service(
+    session: Session = Depends(get_db_session),
+    settings: Settings = Depends(get_settings_dependency),
+) -> AuthService:
+    return AuthService(UserRepository(session), settings)
+
+
+def get_access_service(session: Session = Depends(get_db_session)) -> AccessService:
+    return AccessService(HouseholdRepository(session), MemberRepository(session))
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    session: Session = Depends(get_db_session),
+    settings: Settings = Depends(get_settings_dependency),
+) -> UserModel:
+    if credentials is None:
+        raise AuthenticationError("authentication_required", "Bearer token is required.")
+    payload = decode_access_token(credentials.credentials, settings)
+    user_id = payload.get("sub")
+    if not isinstance(user_id, str):
+        raise AuthenticationError("invalid_token", "Access token subject is invalid.")
+    return UserRepository(session).get(user_id)
 
 
 def get_household_service(session: Session = Depends(get_db_session)) -> HouseholdAppService:
@@ -92,13 +124,17 @@ def get_analytics_service(session: Session = Depends(get_db_session)) -> Analyti
     )
 
 
-def get_import_service(session: Session = Depends(get_db_session)) -> ImportAppService:
+def get_import_service(
+    session: Session = Depends(get_db_session),
+    settings: Settings = Depends(get_settings_dependency),
+) -> ImportAppService:
     return ImportAppService(
         importer_registry=default_importer_registry(),
         import_job_repo=ImportJobRepository(session),
         transaction_repo=TransactionRepository(session),
         account_repo=AccountRepository(session),
         household_repo=HouseholdRepository(session),
+        settings=settings,
     )
 
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from application.services.errors import IntegrationError, NotFoundError, PermissionDenied, ServiceError, ValidationError
+from application.services.errors import AuthenticationError, IntegrationError, NotFoundError, PermissionDenied, ServiceError, ValidationError
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -10,6 +10,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         status_code = 400
         if isinstance(exc, NotFoundError):
             status_code = 404
+        elif isinstance(exc, AuthenticationError):
+            status_code = 401
         elif isinstance(exc, PermissionDenied):
             status_code = 403
         elif isinstance(exc, ValidationError):

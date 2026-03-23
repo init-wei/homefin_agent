@@ -7,9 +7,11 @@ HomeFin Agent is a backend-first household finance platform with an agent/toolin
 The repository already contains a working backend skeleton:
 
 - FastAPI application with core resource routers
+- Bearer-token authentication with current-user injection
 - SQLAlchemy models and repositories
 - Alembic migration scaffold with an initial schema
 - Statement import pipeline for WeChat CSV and a simple bank CSV format
+- DB-backed async import jobs processed by `apps/worker/worker.py`
 - Analytics services for monthly summary, category breakdown, member spending, budget status, and net worth
 - `AgentToolService` with audit logging and owner/member scope enforcement
 - Python MCP server for agent tool exposure
@@ -62,6 +64,8 @@ The default setup uses SQLite:
 
 ```env
 HOMEFIN_DATABASE_URL=sqlite+pysqlite:///./homefin.db
+HOMEFIN_AUTH_SECRET_KEY=dev-only-change-me
+HOMEFIN_IMPORT_STORAGE_DIR=./data/imports
 HOMEFIN_OPENCLAW_CLI_COMMAND=openclaw
 ```
 
@@ -77,7 +81,13 @@ alembic upgrade head
 uvicorn apps.api.main:app --reload
 ```
 
-### 5. Run tests
+### 5. Run the worker
+
+```bash
+python -m apps.worker.worker --once
+```
+
+### 6. Run tests
 
 ```bash
 .venv\\Scripts\\python -m pytest
@@ -101,7 +111,7 @@ OpenClaw is optional during local backend development.
 
 - You do not need OpenClaw installed to work on the API, DB, imports, analytics, or `AgentToolService`
 - You only need OpenClaw for real chat/event integration tests
-- If the CLI is missing, the API now returns a structured integration error instead of crashing
+- If the CLI is missing, chat calls return a structured integration error and worker event publishing degrades to no-op
 
 Bundle and MCP wiring live under `integrations/openclaw/`.
 
@@ -109,13 +119,16 @@ Bundle and MCP wiring live under `integrations/openclaw/`.
 
 Implemented routes include:
 
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me`
 - `POST /households/bootstrap`
 - `GET/POST /accounts`
 - `GET/POST /categories`
 - `GET/POST /budgets`
 - `GET/POST/PATCH /transactions`
 - `POST /imports/statements`
-- `GET /imports/jobs/{job_id}`
+- `GET /imports/jobs/{job_id}?household_id=...`
 - `GET /analytics/*`
 - `POST /chat/bindings`
 - `POST /chat/messages`
@@ -125,10 +138,10 @@ Implemented routes include:
 
 The backend skeleton is stable enough for the next phase. The main follow-up tasks are:
 
-1. Add real authentication and current-user injection
-2. Move imports to an actual async worker flow
-3. Add retry/reprocess support for failed imports
-4. Implement richer finance rules such as transfer detection and auto-categorization
+1. Add retry/reprocess support for failed imports
+2. Implement member invitation and binding bootstrap flows
+3. Implement richer finance rules such as transfer detection and auto-categorization
+4. Validate migrations and behavior on PostgreSQL
 5. Perform real OpenClaw end-to-end integration
 
 ## Notes For Agents

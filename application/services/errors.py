@@ -9,6 +9,10 @@ class PermissionDenied(ServiceError):
     pass
 
 
+class AuthenticationError(ServiceError):
+    pass
+
+
 class NotFoundError(ServiceError):
     pass
 

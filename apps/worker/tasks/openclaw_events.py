@@ -1,4 +1,5 @@
 from adapters.openclaw.gateway_client import OpenClawGatewayClient
+from application.services.errors import IntegrationError
 from infra.config.settings import get_settings
 
 
@@ -7,45 +8,56 @@ def _client() -> OpenClawGatewayClient:
 
 
 def publish_import_completed(*, household_id: str, import_job_id: str, imported_count: int) -> list[str]:
-    return _client().emit_system_event(
-        event_name="import_completed",
-        payload={
-            "household_id": household_id,
-            "import_job_id": import_job_id,
-            "imported_count": imported_count,
-        },
-    )
+    try:
+        return _client().emit_system_event(
+            event_name="import_completed",
+            payload={
+                "household_id": household_id,
+                "import_job_id": import_job_id,
+                "imported_count": imported_count,
+            },
+        )
+    except IntegrationError:
+        return []
 
 
 def publish_import_failed(*, household_id: str, import_job_id: str, error_message: str) -> list[str]:
-    return _client().emit_system_event(
-        event_name="import_failed",
-        payload={
-            "household_id": household_id,
-            "import_job_id": import_job_id,
-            "error_message": error_message,
-        },
-    )
+    try:
+        return _client().emit_system_event(
+            event_name="import_failed",
+            payload={
+                "household_id": household_id,
+                "import_job_id": import_job_id,
+                "error_message": error_message,
+            },
+        )
+    except IntegrationError:
+        return []
 
 
 def publish_budget_threshold_exceeded(*, household_id: str, month: str, utilization_ratio: float) -> list[str]:
-    return _client().emit_system_event(
-        event_name="budget_threshold_exceeded",
-        payload={
-            "household_id": household_id,
-            "month": month,
-            "utilization_ratio": utilization_ratio,
-        },
-    )
+    try:
+        return _client().emit_system_event(
+            event_name="budget_threshold_exceeded",
+            payload={
+                "household_id": household_id,
+                "month": month,
+                "utilization_ratio": utilization_ratio,
+            },
+        )
+    except IntegrationError:
+        return []
 
 
 def publish_repayment_due_soon(*, household_id: str, account_id: str, due_date: str) -> list[str]:
-    return _client().emit_system_event(
-        event_name="repayment_due_soon",
-        payload={
-            "household_id": household_id,
-            "account_id": account_id,
-            "due_date": due_date,
-        },
-    )
-
+    try:
+        return _client().emit_system_event(
+            event_name="repayment_due_soon",
+            payload={
+                "household_id": household_id,
+                "account_id": account_id,
+                "due_date": due_date,
+            },
+        )
+    except IntegrationError:
+        return []

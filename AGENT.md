@@ -7,6 +7,7 @@
 仓库已经从纯设计稿推进到可运行后端骨架，当前实现包含：
 
 - FastAPI API
+- 基于 Bearer token 的认证与当前用户注入
 - SQLAlchemy 2.x + SQLite/PostgreSQL 兼容模型
 - Alembic 初始迁移脚手架
 - 账务核心实体：`User`、`Household`、`Member`、`Account`、`Category`、`Transaction`、`Budget`、`ImportJob`
@@ -16,15 +17,15 @@
 - Python stdio MCP server
 - OpenClaw bundle 基础目录、skill、MCP 配置
 - 微信 CSV 与一个简化银行 CSV importer
+- DB-backed 异步导入队列与 `apps/worker/worker.py`
 - 单元测试 + 集成测试
 
 当前还没有实现：
 
-- 真正的认证系统
-- 真正的异步导入队列
 - 规则引擎、自动分类、转账识别
 - 外部账本 mapper
 - 真正的 OpenClaw hooks / commands 自动化配置
+- 成员邀请 / 独立成员管理 API
 
 ## 2. 当前目录现实
 
@@ -32,7 +33,7 @@
 
 - `apps/api/`: FastAPI 入口、依赖注入、资源路由
 - `apps/mcp/`: Python MCP stdio server
-- `apps/worker/`: 当前只有 OpenClaw 事件桥接任务
+- `apps/worker/`: import job 处理循环与 OpenClaw 事件桥接
 - `application/services/`: 用例编排层，后续改动优先放这里
 - `adapters/importers/`: 账单导入器
 - `adapters/openclaw/`: OpenClaw CLI bridge
@@ -109,6 +110,7 @@ python -m venv .venv
 ```bash
 uvicorn apps.api.main:app --reload
 python -m apps.mcp.server
+python -m apps.worker.worker --once
 alembic upgrade head
 ```
 
@@ -116,13 +118,16 @@ alembic upgrade head
 
 REST API 已有：
 
+- `/auth/register`
+- `/auth/login`
+- `/auth/me`
 - `/households/bootstrap`
 - `/accounts`
 - `/categories`
 - `/budgets`
 - `/transactions`
 - `/imports/statements`
-- `/imports/jobs/{job_id}`
+- `/imports/jobs/{job_id}?household_id=...`
 - `/analytics/*`
 - `/chat/bindings`
 - `/chat/messages`
@@ -149,10 +154,10 @@ Agent / MCP 已有工具：
 
 如果后续继续扩展，推荐按这个顺序：
 
-1. 认证与当前用户注入
-2. 真异步导入任务
-3. 导入失败重试 / reprocess
-4. 转账识别与自动分类
+1. 导入失败重试 / reprocess
+2. 成员邀请 / 身份绑定自助流程
+3. 转账识别与自动分类
+4. PostgreSQL 本地联调与迁移验证
 5. OpenClaw 真联调
 6. 更多 importer / 外部账本 mapper
 
@@ -171,13 +176,15 @@ Agent / MCP 已有工具：
 
 当前测试覆盖：
 
+- auth register/login/me
+- AccessService owner/member scope
 - importer 标准化与 dedupe
 - AgentToolService 权限与幂等
 - 绑定校验
 - API 主流程
-- 导入成功 / 失败
+- 异步导入成功 / 失败
 - OpenClaw CLI 缺失时的 API 响应
-- worker 事件命令拼装
+- worker 事件命令拼装与缺失 CLI 降级
 - MCP tool 调用
 
-变更后保持 `13 passed` 或更高，不要降低测试覆盖的核心路径。
+变更后保持 `15 passed` 或更高，不要降低测试覆盖的核心路径。

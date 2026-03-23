@@ -9,8 +9,11 @@ class ImportJobRead(BaseModel):
     id: str
     household_id: str
     account_id: str | None
+    requested_by_user_id: str | None
     source_type: str
     filename: str
+    mime_type: str
+    storage_path: str
     status: ImportJobStatus
     record_count: int
     error_message: str | None

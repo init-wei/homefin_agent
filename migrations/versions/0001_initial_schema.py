@@ -21,6 +21,7 @@ def upgrade() -> None:
         sa.Column("id", sa.String(length=36), primary_key=True),
         sa.Column("email", sa.String(length=255), nullable=False, unique=True),
         sa.Column("display_name", sa.String(length=255), nullable=False),
+        sa.Column("password_hash", sa.String(length=512), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_table(
@@ -66,8 +67,11 @@ def upgrade() -> None:
         sa.Column("id", sa.String(length=36), primary_key=True),
         sa.Column("household_id", sa.String(length=36), sa.ForeignKey("households.id"), nullable=False),
         sa.Column("account_id", sa.String(length=36), sa.ForeignKey("accounts.id"), nullable=True),
+        sa.Column("requested_by_user_id", sa.String(length=36), sa.ForeignKey("users.id"), nullable=True),
         sa.Column("source_type", sa.String(length=100), nullable=False),
         sa.Column("filename", sa.String(length=255), nullable=False),
+        sa.Column("mime_type", sa.String(length=255), nullable=False),
+        sa.Column("storage_path", sa.String(length=1024), nullable=False),
         sa.Column("status", sa.Enum("PENDING", "PROCESSING", "COMPLETED", "FAILED", name="importjobstatus"), nullable=False),
         sa.Column("record_count", sa.Integer(), nullable=False),
         sa.Column("error_message", sa.Text(), nullable=True),

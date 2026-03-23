@@ -38,6 +38,7 @@ class UserModel(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     email: Mapped[str] = mapped_column(String(255), unique=True)
     display_name: Mapped[str] = mapped_column(String(255))
+    password_hash: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
 
@@ -100,8 +101,11 @@ class ImportJobModel(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     household_id: Mapped[str] = mapped_column(ForeignKey("households.id"))
     account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id"), nullable=True)
+    requested_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     source_type: Mapped[str] = mapped_column(String(100))
     filename: Mapped[str] = mapped_column(String(255))
+    mime_type: Mapped[str] = mapped_column(String(255), default="application/octet-stream")
+    storage_path: Mapped[str] = mapped_column(String(1024))
     status: Mapped[ImportJobStatus] = mapped_column(Enum(ImportJobStatus), default=ImportJobStatus.PENDING)
     record_count: Mapped[int] = mapped_column(default=0)
     error_message: Mapped[str | None] = mapped_column(Text(), nullable=True)

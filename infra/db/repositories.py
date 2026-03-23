@@ -38,12 +38,20 @@ class UserRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
+    def create(self, *, email: str, display_name: str, password_hash: str | None) -> UserModel:
+        if self.get_by_email(email):
+            raise ValidationError("user_email_exists", f"A user with email {email} already exists.")
+        user = UserModel(email=email, display_name=display_name, password_hash=password_hash)
+        self.session.add(user)
+        self.session.flush()
+        return user
+
     def get_or_create(self, *, email: str, display_name: str) -> UserModel:
         user = self.session.scalar(select(UserModel).where(UserModel.email == email))
         if user:
             user.display_name = display_name
             return user
-        user = UserModel(email=email, display_name=display_name)
+        user = UserModel(email=email, display_name=display_name, password_hash=None)
         self.session.add(user)
         self.session.flush()
         return user
@@ -53,6 +61,9 @@ class UserRepository:
         if not user:
             raise NotFoundError("user_not_found", f"User {user_id} was not found.")
         return user
+
+    def get_by_email(self, email: str) -> UserModel | None:
+        return self.session.scalar(select(UserModel).where(UserModel.email == email))
 
 
 class HouseholdRepository:
@@ -99,6 +110,13 @@ class MemberRepository:
         if member.household_id != household_id:
             raise ValidationError("member_household_mismatch", f"Member {member_id} does not belong to household {household_id}.")
         return member
+
+    def find_by_user_and_household(self, *, user_id: str, household_id: str) -> MemberModel | None:
+        stmt = select(MemberModel).where(
+            MemberModel.user_id == user_id,
+            MemberModel.household_id == household_id,
+        )
+        return self.session.scalar(stmt)
 
 
 class AccountRepository:
@@ -303,9 +321,26 @@ class ImportJobRepository:
             raise ValidationError("import_job_household_mismatch", f"Import job {job_id} does not belong to household {household_id}.")
         return job
 
-    def set_status(self, job: ImportJobModel, *, status: ImportJobStatus, record_count: int = 0, error_message: str | None = None) -> None:
+    def list_pending(self, *, limit: int = 20) -> list[ImportJobModel]:
+        stmt = (
+            select(ImportJobModel)
+            .where(ImportJobModel.status == ImportJobStatus.PENDING)
+            .order_by(ImportJobModel.created_at.asc())
+            .limit(limit)
+        )
+        return list(self.session.scalars(stmt))
+
+    def set_status(
+        self,
+        job: ImportJobModel,
+        *,
+        status: ImportJobStatus,
+        record_count: int | None = None,
+        error_message: str | None = None,
+    ) -> None:
         job.status = status
-        job.record_count = record_count
+        if record_count is not None:
+            job.record_count = record_count
         job.error_message = error_message
         self.session.flush()
 
